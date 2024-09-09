@@ -17,6 +17,11 @@ st.markdown("""
         .ezrtsby0 {  /* Botão de configurações na barra superior */
             display: none;
         }
+        }
+        .styles_terminalButton__JBj5T {  /* Botão de configurações na barra superior */
+            display: none;
+        }    
+
     </style>
 """, unsafe_allow_html=True)
 
