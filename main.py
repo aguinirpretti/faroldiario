@@ -13,20 +13,6 @@ st.markdown("""
         .st-emotion-cache-15ecox0 {  /* Menu lateral de deploy e configuração */
             display: none;
         }
-        .css-1aumxhk {  /* Menu lateral */
-            background-color: #f0f0f5;
-        }
-        .css-1v0mbdj {  /* Título do menu lateral */
-            color: #333;
-            font-size: 18px;
-            font-weight: bold;
-        }
-        .css-1v0mbdj::after {  /* Separador entre itens do menu lateral */
-            border-top: 1px solid #ddd;
-        }
-        .css-h1wqlu {  /* Ajuste do título da página */
-            color: #1e3a8a;
-        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -49,10 +35,10 @@ def plot_calendar(df):
     df_calendar = df.copy()
     df_calendar['Day'] = df_calendar['DATA'].dt.date
     df_calendar['Month'] = df_calendar['DATA'].dt.to_period('M')
-    
+
     months = sorted(df_calendar['Month'].unique())
     num_rows = len(months)
-    
+
     fig = make_subplots(
         rows=num_rows, 
         cols=1, 
@@ -134,11 +120,11 @@ def plot_calendar(df):
 def plot_infratores(df, top_n):
     df_motoristas = df.groupby('MOTORISTA').size().reset_index(name='Quantidade')
     df_motoristas = df_motoristas.sort_values(by='Quantidade', ascending=False)
-    
+
     df_motoristas = df_motoristas.head(top_n)
-    
+
     fig = go.Figure()
-    
+
     fig.add_trace(
         go.Bar(
             x=df_motoristas['MOTORISTA'],
@@ -197,6 +183,14 @@ def main():
         end_date = st.date_input("Data de Fim", df['DATA'].max().date(), format="DD/MM/YYYY")
 
         df = df[(df['DATA'] >= pd.to_datetime(start_date)) & (df['DATA'] <= pd.to_datetime(end_date))]
+
+        st.subheader("Cores no Calendário")
+        st.write("""
+            - **NOVO PENDENTE**: Verde
+            - **Atribuído - Pendente de documentação**: Laranja
+            - **Finalizado Com Anexo**: Azul
+            - **Sem Eventos e/ou Mix**: Cinza
+        """)
 
         st.subheader("Calendário de Eventos")
         if not df.empty:
@@ -298,6 +292,13 @@ def main():
             plot_infratores(df, num_motoristas)
         else:
             st.write("Nenhum dado disponível para os filtros selecionados.")
+
+    # Rodapé discreto
+    st.markdown("""
+        <div style="position: fixed; bottom: 10px; right: 10px; font-size: 12px; color: gray;">
+            Desenvolvido por Aguinir Pretti
+        </div>
+    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
