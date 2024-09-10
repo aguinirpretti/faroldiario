@@ -13,6 +13,9 @@ st.markdown("""
         .st-emotion-cache-15ecox0 {  /* Menu lateral de deploy e configuração */
             display: none;
         }
+        .styles_terminalResizable__BBKio {  /* Menu lateral de deploy e configuração */
+            display: none;
+            
     </style>
 """, unsafe_allow_html=True)
 
