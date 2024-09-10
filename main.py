@@ -15,7 +15,21 @@ st.markdown("""
         }
         .styles_terminalResizable__BBKio {  /* Menu lateral de deploy e configuração */
             display: none;
-            
+        }
+        .sidebar .sidebar-content {
+            padding-bottom: 60px; /* Espaço para o rodapé */
+        }
+        .sidebar-footer {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            right: 20px;
+            width: 250px;
+            padding: 10px;
+            font-size: 12px;
+            text-align: start;
+            color: #9d9c9c;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -296,10 +310,10 @@ def main():
         else:
             st.write("Nenhum dado disponível para os filtros selecionados.")
 
-    # Rodapé discreto
-    st.markdown("""
-        <div style="position: fixed; bottom: 10px; right: 10px; font-size: 12px; color: gray;">
-            Desenvolvido por Aguinir Pretti
+    # Rodapé no menu lateral
+    st.sidebar.markdown("""
+        <div class="sidebar-footer">
+            Desenvolvido Por Aguinir Pretti
         </div>
     """, unsafe_allow_html=True)
 
