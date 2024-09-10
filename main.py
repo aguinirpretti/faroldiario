@@ -12,16 +12,13 @@ st.markdown("""
     <style>
         .st-emotion-cache-15ecox0 {  /* Menu lateral de deploy e configuração */
             display: none;
-            
         }
         .ezrtsby0 {  /* Botão de configurações na barra superior */
             display: none;
         }
-        }
         .styles_terminalButton__JBj5T {  /* Botão de configurações na barra superior */
             display: none;
         }    
-
     </style>
 """, unsafe_allow_html=True)
 
@@ -36,7 +33,7 @@ def load_data(file_path):
 def plot_calendar(df):
     status_colors = {
         'NOVO PENDENTE': 'green',
-        'Finalizado Positivo': 'blue',
+        'Finalizado Positivo': 'lightblue',
         'Pendente de documentação': 'orange',
         'Outro': 'gray'
     }
@@ -46,23 +43,34 @@ def plot_calendar(df):
     df_calendar['Month'] = df_calendar['DATA'].dt.to_period('M')
     
     months = sorted(df_calendar['Month'].unique())
-    fig = make_subplots(rows=len(months), cols=1, subplot_titles=[f"Calendário - {month}" for month in months], shared_xaxes=True)
+    num_rows = len(months)
+    
+    # Ajuste do layout e espaçamento
+    fig = make_subplots(
+        rows=num_rows, 
+        cols=1, 
+        subplot_titles=[f"Calendário - {month}" for month in months], 
+        shared_xaxes=True,
+        vertical_spacing=0.05  # Reduz o espaço vertical entre os subplots
+    )
 
     for i, month in enumerate(months):
         month_df = df_calendar[df_calendar['Month'] == month]
         num_days = (datetime(month.year, month.month + 1, 1) - timedelta(days=1)).day if month.month < 12 else (datetime(month.year + 1, 1, 1) - timedelta(days=1)).day
 
-        # Criação de uma matriz para o calendário com valores padrão 'gray'
-        calendar_matrix = ['gray'] * num_days
-        
-        # Atualização dos valores do calendário com base nos dados disponíveis
+        calendar_matrix = [['' for _ in range(7)] for _ in range((num_days + 6) // 7)]
+
         for day in range(1, num_days + 1):
             day_date = datetime(month.year, month.month, day).date()
             status_doc = month_df[month_df['Day'] == day_date]['STATUS_DOC']
             if not status_doc.empty:
-                calendar_matrix[day - 1] = status_colors.get(status_doc.values[0], 'gray')
+                color = status_colors.get(status_doc.values[0], 'gray')
+            else:
+                color = 'gray'  # Cor padrão caso o status_doc esteja vazio
 
-        calendar_matrix = [calendar_matrix[i:i+7] for i in range(0, len(calendar_matrix), 7)]
+            row = (day - 1) // 7
+            col = (day - 1) % 7
+            calendar_matrix[row][col] = (day, color)
 
         heatmap = go.Heatmap(
             z=[[1] * len(row) for row in calendar_matrix],
@@ -78,17 +86,22 @@ def plot_calendar(df):
         )
 
         for row_idx, row in enumerate(calendar_matrix):
-            for col_idx, color in enumerate(row):
-                fig.add_trace(
-                    go.Scatter(
-                        x=[col_idx],
-                        y=[-row_idx],
-                        mode='markers',
-                        marker=dict(color=color, size=20),
-                        showlegend=False
-                    ),
-                    row=i + 1, col=1
-                )
+            for col_idx, cell in enumerate(row):
+                if cell:
+                    day, color = cell
+                    fig.add_trace(
+                        go.Scatter(
+                            x=[col_idx],
+                            y=[-row_idx],
+                            mode='markers+text',
+                            text=[f'<b>{day}</b>'],
+                            textposition='middle center',
+                            marker=dict(color=color, size=30, line=dict(width=2, color='black')),
+                            textfont=dict(size=14, color='black'),
+                            showlegend=False
+                        ),
+                        row=i + 1, col=1
+                    )
 
         fig.update_xaxes(
             ticktext=['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
@@ -97,17 +110,19 @@ def plot_calendar(df):
         )
 
         fig.update_yaxes(
-            visible=False,  # Oculta os valores das semanas
+            visible=False,
         )
 
     fig.update_layout(
         title_text="Calendário de Eventos",
-        height=800,
+        height=600,  # Ajuste a altura total do gráfico conforme necessário
         showlegend=False,
-        xaxis_title="Dia da Semana"
+        xaxis_title="Dia da Semana",
+        margin=dict(l=10, r=10, t=40, b=10)  # Ajuste as margens conforme necessário
     )
 
     st.plotly_chart(fig)
+
 
 # Função principal da aplicação Streamlit
 def main():
@@ -116,7 +131,6 @@ def main():
     file_path = "05_2024.csv"
     df = load_data(file_path)
 
-    # Tratar valores nulos na coluna 'STATUS'
     df['STATUS'] = df['STATUS'].fillna('Desconhecido').astype(str)
     df['STATUS_DOC'] = df['STATUS_DOC'].fillna('Desconhecido').astype(str)
 
@@ -127,12 +141,19 @@ def main():
     if polo != 'Todos':
         df = df[df['POLO'] == polo]
 
-    # Seleção do Tipo de Telemetria
-    sistemas_disponiveis = sorted(df['SISTEMA'].unique())
-    sistema = st.selectbox("Escolha o Sistema de Telemetria", ['Todos'] + sistemas_disponiveis)
+    # Seleção da Unidade
+    unidades_disponiveis = sorted(df['UNIDADE'].unique())
+    unidade = st.selectbox("Escolha a Unidade", ['Todos'] + unidades_disponiveis)
 
-    if sistema != 'Todos':
-        df = df[df['SISTEMA'] == sistema]
+    if unidade != 'Todos':
+        df = df[df['UNIDADE'] == unidade]
+
+    # Seleção do Tipo de Evento
+    tipos_evento_disponiveis = sorted(df['TIPO'].unique())
+    tipo_evento = st.selectbox("Escolha o Tipo de Evento", ['Todos'] + tipos_evento_disponiveis)
+
+    if tipo_evento != 'Todos':
+        df = df[df['TIPO'] == tipo_evento]
 
     # Filtro por Data
     start_date = st.date_input("Data de Início", df['DATA'].min().date(), format="DD/MM/YYYY")
@@ -140,14 +161,12 @@ def main():
 
     df = df[(df['DATA'] >= pd.to_datetime(start_date)) & (df['DATA'] <= pd.to_datetime(end_date))]
 
-    # Exibição do Calendário
     st.subheader("Calendário de Eventos")
     if not df.empty:
         plot_calendar(df)
     else:
         st.write("Nenhum dado disponível para os filtros selecionados.")
 
-    # Status das Tratativas
     st.subheader("Status das Tratativas")
     status_options = sorted(df['STATUS'].unique())
     status = st.selectbox("Escolha o Status", ['Todos'] + status_options)
@@ -155,49 +174,66 @@ def main():
     if status != 'Todos':
         df = df[df['STATUS'] == status]
 
-    # Ordenar por data
+    # Seleção do Tipo de Evento
+    tipo_evento_status = st.selectbox("Escolha o Tipo de Evento (Status das Tratativas)", ['Todos'] + tipos_evento_disponiveis)
+
+    if tipo_evento_status != 'Todos':
+        df = df[df['TIPO'] == tipo_evento_status]
+
     df = df.sort_values(by='DATA')
 
-    # Formatando datas no padrão brasileiro para exibição
     df_display = df.copy()
     df_display['DATA'] = df_display['DATA'].dt.strftime('%d/%m/%Y')
 
     st.write(df_display)
 
-    # Verificação dos prazos de tratamento
     today = datetime.now().date()
 
-    # Atualizando a lógica de prazos
     def calculate_prazo(row):
         if row['STATUS_DOC'] == 'Finalizado Positivo':
             return 'Resolvido'
         else:
-            # Convertendo o Timestamp para um objeto datetime.date
             data = row['DATA'].date()
-            if data < today - timedelta(days=5):
+            days_diff = (today - data).days
+            if days_diff > 5:
                 return 'Atrasado'
-            elif data == today - timedelta(days=3):
+            elif days_diff == 3:
                 return 'Próximo'
+            elif 1 <= days_diff < 3:
+                return 'Dentro do Prazo'
             else:
                 return 'Dentro do Prazo'
 
     df['Prazos'] = df.apply(calculate_prazo, axis=1)
 
     st.subheader("Prazos de Tratamento")
-    prazo_options = sorted(df['Prazos'].unique())
-    prazo = st.selectbox("Escolha o Prazo de Tratamento", ['Todos'] + prazo_options)
+    
+    # Filtrar apenas pendentes
+    df_pendentes = df[df['Prazos'] != 'Resolvido']
 
-    if prazo != 'Todos':
-        df = df[df['Prazos'] == prazo]
+    # Seleção do Tipo de Evento
+    tipo_evento_prazos = st.selectbox("Escolha o Tipo de Evento (Prazos de Tratamento)", ['Todos'] + tipos_evento_disponiveis)
 
-    # Ordenar por data
-    df = df.sort_values(by='DATA')
+    if tipo_evento_prazos != 'Todos':
+        df_pendentes = df_pendentes[df_pendentes['TIPO'] == tipo_evento_prazos]
 
-    # Formatando datas no padrão brasileiro para exibição
-    df_display = df.copy()
+    df_pendentes = df_pendentes.sort_values(by='DATA')
+
+    df_display = df_pendentes.copy()
     df_display['DATA'] = df_display['DATA'].dt.strftime('%d/%m/%Y')
 
-    st.write(df_display[['DATA', 'MOTORISTA', 'STATUS_DOC', 'Prazos']])
+    def color_prazos(val):
+        if val == 'Atrasado':
+            return 'background-color: lightcoral'
+        elif val == 'Próximo':
+            return 'background-color: lightyellow'
+        elif val == 'Dentro do Prazo':
+            return 'background-color: lightgreen'
+        else:
+            return ''
+    
+    styled_df = df_display.style.applymap(color_prazos, subset=['Prazos'])
+    st.write(styled_df)
 
 if __name__ == "__main__":
     main()
