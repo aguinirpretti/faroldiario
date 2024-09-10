@@ -248,7 +248,10 @@ def main():
 
         df['Prazos'] = df.apply(calculate_prazo, axis=1)
 
-        st.subheader("Prazos de Tratamento")
+        # Calcular o total de anexos pendentes
+        total_anexos_pendentes = df[df['Prazos'] != 'Resolvido'].shape[0]
+
+        st.subheader(f"Prazos de Tratamento - Total de Anexos Pendentes: {total_anexos_pendentes}")
         
         # Filtrar apenas pendentes
         df_pendentes = df[df['Prazos'] != 'Resolvido']
@@ -319,3 +322,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
